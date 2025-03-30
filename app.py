@@ -3,10 +3,11 @@ import logging
 import os
 from typing import Optional
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from gitsummarize.auth.auth import verify_token
 from gitsummarize.auth.key_manager import KeyGroup, KeyManager
 from gitsummarize.clients.openai import OpenAIClient
 from gitsummarize.clients.supabase import SupabaseClient
@@ -34,8 +35,8 @@ class SummarizeRequest(BaseModel):
     gemini_key: Optional[str] = None
 
 
-@app.post("/summarize")
-async def summarize(request: SummarizeRequest):
+@app.post("/summarize", operation_id="summarize_repo")
+async def summarize(request: SummarizeRequest, _: str = Depends(verify_token)):
     if not _validate_repo_url(request.repo_url):
         raise HTTPException(status_code=400, detail="Invalid GitHub URL")
     logger.info(f"Summarizing repository: {request.repo_url}")
@@ -69,8 +70,10 @@ def _validate_repo_url(repo_url: str) -> bool:
     return repo_url.startswith("https://github.com/")
 
 
-@app.post("/summarize-local")
-async def summarize_store_local(request: SummarizeRequest):
+@app.post("/summarize-local", operation_id="summarize_store_local")
+async def summarize_store_local(
+    request: SummarizeRequest, _: str = Depends(verify_token)
+):
     if not _validate_repo_url(request.repo_url):
         raise HTTPException(status_code=400, detail="Invalid GitHub URL")
     logger.info(f"Summarizing repository: {request.repo_url}")

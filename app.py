@@ -43,10 +43,12 @@ async def summarize(request: SummarizeRequest):
     google_genai = GoogleGenAI(key_manager.get_key(KeyGroup.GEMINI))
 
     try:
-        business_summary = await google_genai.get_business_summary(
+        client = GoogleGenAI(key_manager.get_key(KeyGroup.GEMINI))
+        business_summary = await client.get_business_summary(
             directory_structure, all_content
         )
-        technical_documentation = await google_genai.get_technical_documentation(
+        client = GoogleGenAI(key_manager.get_key(KeyGroup.GEMINI))
+        technical_documentation = await client.get_technical_documentation(
             directory_structure, all_content
         )
     except Exception as e:

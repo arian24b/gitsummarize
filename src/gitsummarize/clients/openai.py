@@ -1,8 +1,15 @@
 from openai import AsyncOpenAI
+from pydantic import BaseModel
 
 from gitsummarize.clients.ai_client_abc import AIBaseClient
 from gitsummarize.prompts.business_logic import BUSINESS_SUMMARY_PROMPT
+from gitsummarize.prompts.resource_repo import RESOURCE_REPO_PROMPT
 from gitsummarize.prompts.technical_documentation import TECHNICAL_DOCUMENTATION_PROMPT
+
+
+class IsResourceRepo(BaseModel):
+    is_resource_repo: bool
+    reason: str
 
 
 class OpenAIClient(AIBaseClient):
@@ -36,3 +43,12 @@ class OpenAIClient(AIBaseClient):
             ],
         )
         return response.choices[0].message.content
+
+    async def get_is_resource_repo(self, repo_info: str) -> IsResourceRepo:
+        prompt = RESOURCE_REPO_PROMPT.format(repo_info=repo_info)
+        response = await self.client.beta.chat.completions.parse(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            response_format=IsResourceRepo,
+        )
+        return response.choices[0].message.parsed

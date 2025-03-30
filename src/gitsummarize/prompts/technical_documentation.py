@@ -21,8 +21,8 @@ When applicable, infer and document:
 
 Your output should be production-quality documentation suitable for internal engineering wikis or public open-source repositories.
 
-IMPORTANT: There should be a demarcator --- before every ## tag.
-IMPORTANT: Just output the documentation, no other text.
+IMPORTANT: Please use the ## heading accurately. I will use it to divide the documentation into high level component sections.
+IMPORTANT: Just output the documentation in markdown format, no other text.
 
 ---
 

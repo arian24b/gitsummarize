@@ -40,8 +40,8 @@ Please generate a structured design document with the following format:
 ---
 
 Use concise, structured language. Think like a staff engineer writing for a new team member trying to understand how this part of the app maps to real product behavior.
-IMPORTANT: There should be a demarcator --- before every ## tag.
-IMPORTANT: Just output the documentation, no other text.
+IMPORTANT: Please use the ## heading accurately. I will use it to divide the documentation into high level component sections, these headings should be business specific behaviors only.
+IMPORTANT: Just output the documentation in markdown format, no other text.
 
 ---
 Here is the directory structure of the codebase:

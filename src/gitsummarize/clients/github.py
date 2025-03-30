@@ -57,7 +57,6 @@ class GithubClient:
 
             return "\n\n".join(formatted_content)
 
-
     async def download_repository_zip(self, owner: str, repo: str) -> Path:
         url = f"https://api.github.com/repos/{owner}/{repo}/zipball"
         async with aiohttp.ClientSession() as session:
@@ -85,6 +84,38 @@ class GithubClient:
         # Build directory structure
         structure = self._build_directory_structure(data["tree"])
         return self._format_directory_structure(structure)
+
+    async def get_popular_repos(self, num_repos: int = 1000) -> list[dict]:
+        items = []
+        page = 1
+        per_page = min(100, num_repos)  # GitHub max per page is 100
+        remaining = num_repos
+
+        while remaining > 0:
+            current_per_page = min(per_page, remaining)
+            url = f"https://api.github.com/search/repositories?q=stars:>1000&sort=stars&order=desc&page={page}&per_page={current_per_page}"
+
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, headers=self.headers) as response:
+                    await self._raise_for_status("search", "repositories", response)
+                    data = await response.json()
+
+                    if not data.get("items"):
+                        break
+
+                    items.extend(data["items"])
+                    if len(data["items"]) < current_per_page:
+                        break
+
+                    remaining -= len(data["items"])
+                    page += 1
+
+                    if len(items) >= num_repos:
+                        break
+                    print(f"Fetched {len(items)} repos so far")
+                    await asyncio.sleep(1)
+
+        return items[:num_repos]  # Ensure we don't return more than requested
 
     def _parse_gh_url(self, gh_url: str) -> tuple[str, str]:
         """Parse a GitHub URL into owner, repo, and path."""

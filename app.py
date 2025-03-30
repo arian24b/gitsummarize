@@ -21,9 +21,9 @@ openai = OpenAIClient(os.getenv("OPENAI_API_KEY"))
 supabase = SupabaseClient(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_ADMIN_KEY"))
 
 key_manager = KeyManager()
-key_manager.add_key(KeyGroup.GEMINI, os.getenv("GEMINI_API_KEY"))
-key_manager.add_key(KeyGroup.GEMINI, os.getenv("GEMINI_API_KEY_2"))
-key_manager.add_key(KeyGroup.GEMINI, os.getenv("GEMINI_API_KEY_3"))
+for i in range(1, int(os.getenv("NUM_GEMINI_KEYS")) + 1):
+    key_manager.add_key(KeyGroup.GEMINI, os.getenv(f"GEMINI_API_KEY_{i}"))
+
 
 app = FastAPI()
 
@@ -40,7 +40,6 @@ async def summarize(request: SummarizeRequest):
 
     directory_structure = await gh.get_directory_structure_from_url(request.repo_url)
     all_content = await gh.get_all_content_from_url(request.repo_url)
-    google_genai = GoogleGenAI(key_manager.get_key(KeyGroup.GEMINI))
 
     try:
         client = GoogleGenAI(key_manager.get_key(KeyGroup.GEMINI))

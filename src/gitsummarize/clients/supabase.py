@@ -12,3 +12,8 @@ class SupabaseClient:
             "technical_documentation": technical_documentation
         }).execute()
 
+    def check_repo_url_exists(self, repo_url: str) -> str | None:
+        response = self.client.table("repo_summaries").select("repo_url").eq("repo_url", repo_url).execute()
+        if len(response.data) == 0:
+            return None
+        return response.data[0]

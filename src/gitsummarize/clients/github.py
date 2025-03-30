@@ -2,7 +2,9 @@ import asyncio
 import base64
 from itertools import batched
 import logging
+from pathlib import Path
 from textwrap import dedent
+import zipfile
 import aiohttp
 from typing import Dict, List
 
@@ -24,13 +26,28 @@ class GithubClient:
 
     async def get_all_content_from_url(self, gh_url: str) -> str:
         owner, repo = self._parse_gh_url(gh_url)
-        return await self.get_all_content(owner, repo)
+        zip_path = await self.download_repository_zip(owner, repo)
+        return await self.get_all_content_from_zip(zip_path)
 
     async def get_directory_structure_from_url(self, gh_url: str) -> str:
         owner, repo = self._parse_gh_url(gh_url)
         return await self.get_directory_structure(owner, repo)
 
-    async def get_all_content(
+    async def get_all_content_from_zip(self, path: Path) -> str:
+        with zipfile.ZipFile(path, "r") as zip_ref:
+            valid_files = [
+                file
+                for file in zip_ref.namelist()
+                if file.endswith(tuple(VALID_FILE_EXTENSIONS))
+            ]
+            return "\n\n".join(
+                self._get_formatted_content(
+                    file, zip_ref.read(file).decode("utf-8")
+                )
+                for file in valid_files
+            )
+
+    async def get_all_content_tree_api(
         self, owner: str, repo: str, max_file_size_bytes: int = 50 * 1024
     ) -> str:
         default_branch = await self._get_default_branch(owner, repo)
@@ -53,12 +70,20 @@ class GithubClient:
 
         async def fetch_with_semaphore(item):
             async with semaphore:
-                return await self._get_content(item["url"], item["path"])
+                return await self._get_content_from_blob_url(item["url"], item["path"])
 
         tasks = [fetch_with_semaphore(item) for item in tree]
         results = await asyncio.gather(*[task for task in tasks if task is not None])
 
         return "\n\n".join(results)
+
+    async def download_repository_zip(self, owner: str, repo: str) -> Path:
+        url = f"https://api.github.com/repos/{owner}/{repo}/zipball"
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, headers=self.headers) as response:
+                with open(f"/tmp/{repo}.zip", "wb") as f:
+                    f.write(await response.content.read())
+        return Path(f"/tmp/{repo}.zip")
 
     async def get_directory_structure(self, owner: str, repo: str) -> str:
         """Get the directory structure of a repository in a tree-like format."""
@@ -97,11 +122,12 @@ class GithubClient:
         return [
             item
             for item in data["tree"]
-            if item["type"] == "blob" and item["size"] <= max_file_size_bytes
+            if item["type"] == "blob"
+            and item["size"] <= max_file_size_bytes
             and item["path"].endswith(tuple(VALID_FILE_EXTENSIONS))
         ]
 
-    async def _get_content(self, blob_url: str, path: str) -> str | None:
+    async def _get_content_from_blob_url(self, blob_url: str, path: str) -> str | None:
         async with aiohttp.ClientSession() as session:
             async with session.get(blob_url, headers=self.headers) as response:
                 data = await response.json()
@@ -111,12 +137,15 @@ class GithubClient:
             logger.error(f"Error decoding content: {e}")
             return None
 
+        return self._get_formatted_content(path, decoded_content)
+
+    def _get_formatted_content(self, path: str, content: str) -> str:
         return dedent(
             f"""
             =============================================================================
             File: {path}
             =============================================================================
-            {decoded_content}\n
+            {content}
             """
         )
 

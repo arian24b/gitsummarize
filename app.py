@@ -14,9 +14,11 @@ async def main():
     with open("tmp/directory_structure.txt", "w") as f:
         f.write(directory_structure)
     
-    all_content = await gh.get_all_content("fastapi", "fastapi")
+    all_content = await gh.get_all_content_from_url("https://github.com/fastapi/fastapi")
     with open("tmp/all_content.txt", "w") as f:
         f.write(all_content)
+
+    await gh.download_repository_zip("octocat", "Hello-World")
 
 
 

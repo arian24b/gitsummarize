@@ -10,5 +10,5 @@ class AIBaseClient(ABC):
     def get_technical_documentation(self, prompt: str) -> str:
         pass
     
-    def _truncate_text(self, text: str, max_tokens: int, multiplier: float = 3.8) -> str:
+    def _truncate_text(self, text: str, max_tokens: int, multiplier: float = 3.9) -> str:
         return text[: int(max_tokens * multiplier)]

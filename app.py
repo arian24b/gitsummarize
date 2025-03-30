@@ -6,6 +6,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from gitsummarize.auth.key_manager import KeyGroup, KeyManager
 from gitsummarize.clients.openai import OpenAIClient
 from gitsummarize.clients.supabase import SupabaseClient
 from src.gitsummarize.clients.github import GithubClient
@@ -16,9 +17,13 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 gh = GithubClient(os.getenv("GITHUB_TOKEN"))
-google_genai = GoogleGenAI(os.getenv("GEMINI_API_KEY"))
 openai = OpenAIClient(os.getenv("OPENAI_API_KEY"))
 supabase = SupabaseClient(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_ADMIN_KEY"))
+
+key_manager = KeyManager()
+key_manager.add_key(KeyGroup.GEMINI, os.getenv("GEMINI_API_KEY"))
+key_manager.add_key(KeyGroup.GEMINI, os.getenv("GEMINI_API_KEY_2"))
+key_manager.add_key(KeyGroup.GEMINI, os.getenv("GEMINI_API_KEY_3"))
 
 app = FastAPI()
 
@@ -35,6 +40,7 @@ async def summarize(request: SummarizeRequest):
 
     directory_structure = await gh.get_directory_structure_from_url(request.repo_url)
     all_content = await gh.get_all_content_from_url(request.repo_url)
+    google_genai = GoogleGenAI(key_manager.get_key(KeyGroup.GEMINI))
 
     try:
         business_summary = await google_genai.get_business_summary(

@@ -38,44 +38,15 @@ class GithubClient:
             valid_files = [
                 file
                 for file in zip_ref.namelist()
-                if file.endswith(tuple(VALID_FILE_EXTENSIONS))
+                if file.endswith(VALID_FILE_EXTENSIONS)
             ]
             return "\n\n".join(
                 self._get_formatted_content(
-                    file, zip_ref.read(file).decode("utf-8")
+                    self._get_file_name_from_zip_name(file),
+                    zip_ref.read(file).decode("utf-8"),
                 )
                 for file in valid_files
             )
-
-    async def get_all_content_tree_api(
-        self, owner: str, repo: str, max_file_size_bytes: int = 50 * 1024
-    ) -> str:
-        default_branch = await self._get_default_branch(owner, repo)
-        latest_commit = await self._get_latest_commit(owner, repo, default_branch)
-        tree_sha = await self._get_tree_sha(owner, repo, latest_commit)
-
-        url = f"https://api.github.com/repos/{owner}/{repo}/git/trees/{tree_sha}?recursive=1"
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, headers=self.headers) as response:
-                await self._raise_for_status(owner, repo, response)
-                try:
-                    data = await response.json()
-                except Exception as e:
-                    logger.error(f"Error parsing JSON response: {e}")
-                    raise GitHubTreeError(owner, repo)
-
-        tree = self._get_filtered_tree(data, max_file_size_bytes)
-
-        semaphore = asyncio.Semaphore(5)
-
-        async def fetch_with_semaphore(item):
-            async with semaphore:
-                return await self._get_content_from_blob_url(item["url"], item["path"])
-
-        tasks = [fetch_with_semaphore(item) for item in tree]
-        results = await asyncio.gather(*[task for task in tasks if task is not None])
-
-        return "\n\n".join(results)
 
     async def download_repository_zip(self, owner: str, repo: str) -> Path:
         url = f"https://api.github.com/repos/{owner}/{repo}/zipball"
@@ -118,36 +89,10 @@ class GithubClient:
         repo = parts[-1]
         return owner, repo
 
-    def _get_filtered_tree(self, data: dict, max_file_size_bytes: int) -> list[dict]:
-        return [
-            item
-            for item in data["tree"]
-            if item["type"] == "blob"
-            and item["size"] <= max_file_size_bytes
-            and item["path"].endswith(tuple(VALID_FILE_EXTENSIONS))
-        ]
-
-    async def _get_content_from_blob_url(self, blob_url: str, path: str) -> str | None:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(blob_url, headers=self.headers) as response:
-                data = await response.json()
-        try:
-            decoded_content = base64.b64decode(data["content"]).decode("utf-8")
-        except UnicodeDecodeError as e:  # TODO: Handle binary files
-            logger.error(f"Error decoding content: {e}")
-            return None
-
-        return self._get_formatted_content(path, decoded_content)
-
-    def _get_formatted_content(self, path: str, content: str) -> str:
-        return dedent(
-            f"""
-            =============================================================================
-            File: {path}
-            =============================================================================
-            {content}
-            """
-        )
+    def _get_file_name_from_zip_name(self, zip_name: str) -> str:
+        zip_name = zip_name.split("/")
+        root_dir = zip_name[0]
+        return "-".join(root_dir.split("-")[1:-1]) + "/" + "/".join(zip_name[1:])
 
     async def _raise_for_status(
         self, owner: str, repo: str, response: aiohttp.ClientResponse
@@ -218,3 +163,13 @@ class GithubClient:
                 lines.append(f"{prefix}{connector}{name}")
 
         return "\n".join(lines)
+
+    def _get_formatted_content(self, path: str, content: str) -> str:
+        return dedent(
+            f"""
+=============================================================================
+File: {path}
+=============================================================================
+{content}
+"""
+        )

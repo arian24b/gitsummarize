@@ -1,4 +1,4 @@
-VALID_FILE_EXTENSIONS = [
+VALID_FILE_EXTENSIONS = (
     # Documentation
     ".md", ".rst", ".txt", ".adoc", ".asciidoc", ".wiki",
     
@@ -138,4 +138,4 @@ VALID_FILE_EXTENSIONS = [
     # Documentation
     "README.md", "CHANGELOG.md", "CONTRIBUTING.md", "LICENSE", "AUTHORS",
     "docs/*", "*.md", "*.rst", "*.txt", "*.adoc", "*.asciidoc", "*.wiki",
-]
+)

@@ -40,13 +40,23 @@ class GithubClient:
                 for file in zip_ref.namelist()
                 if file.endswith(VALID_FILE_EXTENSIONS)
             ]
-            return "\n\n".join(
-                self._get_formatted_content(
-                    self._get_file_name_from_zip_name(file),
-                    zip_ref.read(file).decode("utf-8"),
+
+            formatted_content = []
+            for file in valid_files:
+                try:
+                    decoded_content = zip_ref.read(file).decode("utf-8")
+                except UnicodeDecodeError:
+                    logger.warning(f"Failed to decode content for file: {file}")
+                    continue
+                formatted_content.append(
+                    self._get_formatted_content(
+                        self._get_file_name_from_zip_name(file),
+                        decoded_content,
+                    )
                 )
-                for file in valid_files
-            )
+
+            return "\n\n".join(formatted_content)
+
 
     async def download_repository_zip(self, owner: str, repo: str) -> Path:
         url = f"https://api.github.com/repos/{owner}/{repo}/zipball"

@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+from typing import Optional
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
@@ -30,6 +31,7 @@ app = FastAPI()
 
 class SummarizeRequest(BaseModel):
     repo_url: str
+    gemini_key: Optional[str] = None
 
 
 @app.post("/summarize")
@@ -41,12 +43,15 @@ async def summarize(request: SummarizeRequest):
     directory_structure = await gh.get_directory_structure_from_url(request.repo_url)
     all_content = await gh.get_all_content_from_url(request.repo_url)
 
+    key_1 = request.gemini_key or key_manager.get_key(KeyGroup.GEMINI)
+    key_2 = request.gemini_key or key_manager.get_key(KeyGroup.GEMINI)
+
     try:
-        client = GoogleGenAI(key_manager.get_key(KeyGroup.GEMINI))
+        client = GoogleGenAI(key_1)
         business_summary = await client.get_business_summary(
             directory_structure, all_content
         )
-        client = GoogleGenAI(key_manager.get_key(KeyGroup.GEMINI))
+        client = GoogleGenAI(key_2)
         technical_documentation = await client.get_technical_documentation(
             directory_structure, all_content
         )

@@ -18,6 +18,8 @@ from gitsummarize.exceptions.exceptions import (
 
 logger = logging.getLogger(__name__)
 
+FILE_LIMIT = 100 * 1000  # 100kb
+
 
 class GithubClient:
     def __init__(self, token: str):
@@ -44,6 +46,9 @@ class GithubClient:
             formatted_content = []
             for file in valid_files:
                 try:
+                    if zip_ref.getinfo(file).file_size > FILE_LIMIT:
+                        logger.warning(f"Skipping file: {file} because it is too large")
+                        continue
                     decoded_content = zip_ref.read(file).decode("utf-8")
                 except UnicodeDecodeError:
                     logger.warning(f"Failed to decode content for file: {file}")

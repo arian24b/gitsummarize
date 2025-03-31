@@ -31,7 +31,7 @@ def main():
         }
 
         response = requests.post(url, headers=headers, json=data)
-        print(response.json())
+        print(response.text)
 
 
 if __name__ == "__main__":

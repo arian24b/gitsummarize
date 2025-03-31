@@ -1,6 +1,7 @@
 from collections import defaultdict
 from enum import StrEnum
 import itertools
+import random
 
 
 class KeyGroup(StrEnum):
@@ -16,6 +17,7 @@ class KeyManager:
     def add_key(self, group: KeyGroup, key: str):
         self.keys[group].append(key)
         self.iterators[group] = itertools.cycle(self.keys[group])
+        random.shuffle(self.keys[group])
 
     def get_key(self, group: KeyGroup) -> str:
         return next(self.iterators[group])

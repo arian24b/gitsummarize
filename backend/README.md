@@ -15,6 +15,7 @@ Make sure that you have `cd`-ed into `backend`.
     repo_url text
     business_summary text
     technical_documentation text
+    created_at timestamptz
     ```
 7. Add Supabase keys to `.env`.
 8. Add Gemini API keys to `.env`. You can add as many keys as you want.

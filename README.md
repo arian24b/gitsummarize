@@ -7,6 +7,8 @@
 ## **Generate beautiful, world-class documentation from any GitHub repository — instantly.**  
 
 Just replace `hub` with `summarize` in any GitHub URL to generate a live, interactive documentation hub.
+
+https://gitsummarize.com/
 </div>
 
 ---

@@ -76,14 +76,12 @@ Shoutout to [GitIngest](https://gitingest.com/) and [GitDiagram](https://gitdiag
 
 We are currently hosting it for free with rate limits though this is somewhat likely to change in the future based on Gemini's API policies.
 
-<!-- If you would like to bypass these, self-hosting instructions are provided. I also plan on adding an input for your own Anthropic API key.
-
-Diagram generation:
-
-- 1 request per minute
-- 5 requests per day -->
-
 ## 🤔 Future Steps
 
 - Expand documentation to cover more topics (Setup, Onboarding Guide)
 - Add Architecture Diagrams
+
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=antarixxx/gitsummarize&type=Date)](https://www.star-history.com/#antarixxx/gitsummarize&Date)

@@ -16,7 +16,6 @@ async def main():
     # Get up to 500 popular repositories
     repos = await gh.get_popular_repos(num_repos=1000)    
     non_resource_repos = await filter_resource_repos(repos)
-    breakpoint()
     print(non_resource_repos)
 
 

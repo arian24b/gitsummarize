@@ -5,6 +5,7 @@ from typing import Optional
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.responses import JSONResponse
+from gitsummarize.exceptions.exceptions import GitHubAccessError
 from pydantic import BaseModel
 
 from gitsummarize.auth.auth import verify_token
@@ -61,12 +62,22 @@ async def summarize(request: SummarizeRequest, _: str = Depends(verify_token)):
     supabase.insert_repo_summary(
         request.repo_url, business_summary, technical_documentation
     )
-
+    try:
+        await _update_repo_metadata(request.repo_url)
+    except GitHubAccessError as e:
+        logger.error(f"Error updating repo metadata for {request.repo_url}: {e}")
     return JSONResponse(content={"message": "Repository summarized successfully"})
 
 
-def _validate_repo_url(repo_url: str) -> bool:
-    return repo_url.startswith("https://github.com/")
+@app.post("/repo-metadata-cron")
+async def repo_metadata_cron(_: str = Depends(verify_token)):
+    repo_urls = supabase.get_all_repo_urls()
+    for repo_url in repo_urls:
+        try:
+            metadata = await gh.get_repo_metadata_from_url(repo_url)
+            supabase.upsert_repo_metadata(repo_url, metadata)
+        except GitHubAccessError as e:
+            logger.error(f"Error updating repo metadata for {repo_url}: {e}")
 
 
 @app.post("/summarize-local", operation_id="summarize_store_local")
@@ -89,3 +100,15 @@ async def summarize_store_local(
         f.write(business_summary)
     with open("tmp/openai/technical_documentation.txt", "w") as f:
         f.write(technical_documentation)
+
+
+def _validate_repo_url(repo_url: str) -> bool:
+    return repo_url.startswith("https://github.com/")
+
+
+async def _update_repo_metadata(repo_url: str):
+    try:
+        metadata = await gh.get_repo_metadata_from_url(repo_url)
+        supabase.upsert_repo_metadata(repo_url, metadata)
+    except GitHubAccessError as e:
+        logger.error(f"Error updating repo metadata for {repo_url}: {e}")

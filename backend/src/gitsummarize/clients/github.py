@@ -15,6 +15,7 @@ from gitsummarize.exceptions.exceptions import (
     GitHubRateLimitError,
     GitHubTreeError,
 )
+from gitsummarize.model.repo_metadata import RepoMetadata
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +26,24 @@ class GithubClient:
     def __init__(self, token: str):
         self.token = token
         self.headers = {"Authorization": f"Bearer {self.token}"}
+
+    async def get_repo_metadata_from_url(self, gh_url: str) -> RepoMetadata:
+        owner, repo = self._parse_gh_url(gh_url)
+        return await self.get_repo_metadata(owner, repo)
+
+    async def get_repo_metadata(self, owner: str, repo: str) -> RepoMetadata:
+        url = f"https://api.github.com/repos/{owner}/{repo}"
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, headers=self.headers) as response:
+                data = await response.json()
+                if response.status != 200:
+                    raise GitHubAccessError(owner, repo)
+                return RepoMetadata(
+                    num_stars=data["stargazers_count"],
+                    num_forks=data["forks_count"],
+                    language=data["language"],
+                    description=data["description"],
+                )
 
     async def get_all_content_from_url(self, gh_url: str) -> str:
         owner, repo = self._parse_gh_url(gh_url)

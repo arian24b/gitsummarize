@@ -4,10 +4,9 @@
 
 Make sure that you have `cd`-ed into `backend`.
 
-1. Create a new Python environment (Python 3.13 or above) using `conda`, `venv`, `pipx`, etc.
-2. Install Poetry: `pip install poetry==2.1.2`.
-3. Install dependencies: `poetry install`.
-4. Create a new `.env` file and copy the contents of `.env.template` to it.
+1. Install uv: `pip install uv` or follow the [uv installation guide](https://docs.astral.sh/uv/getting-started/installation/).
+2. Install dependencies: `uv sync`.
+3. Create a new `.env` file and copy the contents of `.env.example` to it.
 5. Add your GitHub API key to `.env`.
 6. Create a new Supabase project with a table with the following columns:
     ```psql

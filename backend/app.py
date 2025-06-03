@@ -30,6 +30,11 @@ for i in range(1, int(os.getenv("NUM_GEMINI_KEYS")) + 1):
 
 app = FastAPI()
 
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for monitoring"""
+    return {"status": "healthy", "service": "gitsummarize-backend"}
+
 
 class SummarizeRequest(BaseModel):
     repo_url: str

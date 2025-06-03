@@ -1,0 +1,81 @@
+name: Dependency Updates
+
+on:
+  schedule:
+    # Run every Monday at 9 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+jobs:
+  update-backend-dependencies:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+      with:
+        version: "latest"
+
+    - name: Set up Python
+      run: uv python install 3.13
+
+    - name: Update dependencies
+      run: |
+        uv lock --upgrade
+        uv export --no-hashes > requirements.txt
+
+    - name: Create Pull Request
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: 'chore: update backend dependencies'
+        title: 'chore: update backend dependencies'
+        body: |
+          This PR updates the backend dependencies to their latest versions.
+
+          Please review the changes and ensure all tests pass before merging.
+        branch: update-backend-deps
+        base: develop
+
+  update-frontend-dependencies:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Update dependencies
+      run: |
+        npm update
+        npm audit fix --force || true
+
+    - name: Create Pull Request
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: 'chore: update frontend dependencies'
+        title: 'chore: update frontend dependencies'
+        body: |
+          This PR updates the frontend dependencies to their latest versions.
+
+          Please review the changes and ensure all tests pass before merging.
+        branch: update-frontend-deps
+        base: develop
